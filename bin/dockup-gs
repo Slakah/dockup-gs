@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description='Restore a backup, and then backup 
 parser.add_argument('backup', help='the google storage backup url')
 parser.add_argument('paths', metavar='path', nargs='+', help='the path to be restored and backed up')
 parser.add_argument('--backup-name', help='the the suffix to use for the backup file')
-parser.add_argument('--gs-key', required=False, help='the google cloud service key (json)')
+parser.add_argument('--gc-key', required=False, help='the google cloud service key (json)')
 parser.add_argument('--cron-time', default='0 * * * *', help='the cron time to backup to')
 parser.add_argument('--no-restore', dest='restore', default=True, action='store_false', help="don't restore from backup")
 args = parser.parse_args()
@@ -26,10 +26,10 @@ def do_call(cmd):
     call(cmd)
 
 # gcloud auth
-account = json.loads(args.gs_key)['client_email']
+account = json.loads(args.gc_key)['client_email']
 do_call(['gcloud', 'config', 'set', 'account', account])
 with NamedTemporaryFile() as key_file:
-    key_file.write(args.gs_key)
+    key_file.write(args.gc_key)
     key_file.flush()
     do_call(['gcloud', 'auth', 'activate-service-account', '--key-file', key_file.name])
 do_call(['gcloud', 'auth', 'login', account])
