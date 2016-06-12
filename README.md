@@ -1,8 +1,11 @@
+
 # dockup-gs
+
+[![Docker Pulls](https://img.shields.io/docker/pulls/slakah/dockup-gs.svg?style=flat)](https://hub.docker.com/r/slakah/dockup-gs/)
 
 Restore and backup docker container volumes to google cloud storage.
 
-Inspired by [dockup](https://github.com/tutumcloud/dockup)
+Inspired by [dockup](https://github.com/tutumcloud/dockup).
 
 ## Usage examples
 
