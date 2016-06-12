@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+from subprocess import call, list2cmdline
+import tarfile
+import tempfile
+import os
+import datetime
+import argparse
+
+parser = argparse.ArgumentParser(description='Backup path to google storage.')
+parser.add_argument('backup', help='the google storage backup url')
+parser.add_argument('paths', metavar='path', nargs='+', help='the path to be backed up')
+parser.add_argument('--backup-name', help='the the suffix to use for the backup file')
+args = parser.parse_args()
+
+file_date = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H%M%S')
+backup_name = '-'.join(filter(None, [args.backup_name, file_date])) + '.tar'
+backup_path = os.path.join(tempfile.gettempdir(), backup_name)
+
+with tarfile.open(name=backup_path, mode='w|') as backup_file:
+    for path in args.paths:
+        print('added {0} to backup'.format(path))
+        backup_file.add(path)
+
+backup_cmd = ['gsutil', 'cp', '-z', 'tar', backup_path, args.backup]
+print(list2cmdline(backup_cmd))
+call(backup_cmd)
+os.remove(backup_path)
+print('finished backing up')

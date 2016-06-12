@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+import argparse
+import os
+import re
+import json
+from subprocess import call, list2cmdline
+from tempfile import NamedTemporaryFile
+
+parser = argparse.ArgumentParser(description='Restore a backup, and then backup periodically.')
+parser.add_argument('backup', help='the google storage backup url')
+parser.add_argument('paths', metavar='path', nargs='+', help='the path to be restored and backed up')
+parser.add_argument('--backup-name', help='the the suffix to use for the backup file')
+parser.add_argument('--gs-key', required=False, help='the google cloud service key (json)')
+parser.add_argument('--cron-time', default='0 * * * *', help='the cron time to backup to')
+parser.add_argument('--no-restore', dest='restore', default=True, action='store_false', help="don't restore from backup")
+args = parser.parse_args()
+
+def validate_args():
+    for path in args.paths:
+        assert os.path.isabs(path), path + ' is not an absolute path'
+
+validate_args()
+
+def do_call(cmd):
+    print(list2cmdline(cmd))
+    call(cmd)
+
+# gcloud auth
+account = json.loads(args.gs_key)['client_email']
+do_call(['gcloud', 'config', 'set', 'account', account])
+with NamedTemporaryFile() as key_file:
+    key_file.write(args.gs_key)
+    key_file.flush()
+    do_call(['gcloud', 'auth', 'activate-service-account', '--key-file', key_file.name])
+do_call(['gcloud', 'auth', 'login', account])
+
+# restore data
+if args.restore:
+    do_call(['restore', args.backup] + ['--backup-name', args.backup_name] if args.backup_name else [])
+
+# create and run cron job
+with NamedTemporaryFile() as cron_file:
+    opt_backup_name = ['--backup-name', args.backup_name] if args.backup_name else []
+    backup_args = opt_backup_name + [args.backup] + args.paths
+    cron_file.write(' '.join([args.cron_time, 'backup'] + backup_args))
+    cron_file.flush()
+    do_call(['crontab', cron_file.name])
+
+do_call(['crond', '-f', '-d', '8'])

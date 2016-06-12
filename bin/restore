@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+from subprocess import call, check_output, list2cmdline
+import tarfile
+import tempfile
+import os
+import argparse
+import sys
+
+parser = argparse.ArgumentParser(description='Restore backup from google storage.')
+parser.add_argument('backup', help='the google storage backup url')
+parser.add_argument('--backup-name', help='the the suffix to used by the backup file')
+args = parser.parse_args()
+
+if args.backup_name:
+    backup_pattern = '{0}-*.tar'.format(args.backup_name)
+else:
+    backup_pattern = '*.tar'
+
+def find_latest_backup():
+    ls_cmd = ['gsutil', 'ls', os.path.join(args.backup, backup_pattern)]
+    print(list2cmdline(ls_cmd))
+    backups = check_output(ls_cmd).splitlines()
+    backups_newest_first = sorted(backups, reverse=True)
+    print('found backups:')
+    for backup in backups_newest_first:
+        print('  ' + backup)
+
+    return backups_newest_first[0] if backups_newest_first else None
+
+latest_backup = find_latest_backup()
+if not latest_backup:
+    print('unable to find backup file to restore')
+    sys.exit(0)
+print('latest backup is {0}'.format(latest_backup))
+
+def fetch_backup(url):
+    fetch_cmd = ['gsutil', 'cp', url, tempfile.gettempdir()]
+    print(list2cmdline(fetch_cmd))
+    call(fetch_cmd)
+    return os.path.join(tempfile.gettempdir(), os.path.basename(url))
+
+backup_path = fetch_backup(latest_backup)
+
+def restore_backup(path):
+    with tarfile.open(backup_path) as backup_file:
+        print('extracting backup...')
+        print('backup contains:')
+        for member in backup_file.getmembers():
+            print('  ' + member.name)
+        backup_file.extractall()
+
+restore_backup(backup_path)
+os.remove(backup_path)
+print('finished restoring from backup')
