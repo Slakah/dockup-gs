@@ -6,6 +6,12 @@ Inspired by [dockup](https://github.com/tutumcloud/dockup)
 
 ## Usage examples
 
+Backup a local directory `foo` to a google storage bucket every hour.
+
+```
+docker run -ti -v $(pwd)/foo:/foo slakah/dockup-gs gs://backup-bucket/test/ /foo --backup-name test --no-restore --gc-key '<service account json>'
+```
+
 Restore and then periodically back up a mysql container to google storage everyday at 02:30, using [docker-compose](https://docs.docker.com/compose/).
 
 ```
