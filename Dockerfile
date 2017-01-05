@@ -9,4 +9,4 @@ RUN curl https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud
 ENV PATH=$PATH:/opt/google-cloud-sdk/bin/
 
 COPY bin/* /usr/local/bin/
-ENTRYPOINT ["tini", "--", "dockup-gs"]
+ENTRYPOINT ["/sbin/tini", "--", "dockup-gs"]
